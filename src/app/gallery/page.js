@@ -30,6 +30,7 @@ const Gallery = () => {
   const [showWishes, setShowWishes] = useState(false);
   const [user, setUser] = useState(null);
   const [hearts, setHearts] = useState([]);
+  const [downloadingFiles, setDownloadingFiles] = useState(new Set());
   const router = useRouter();
 
   // Generate hearts only on client side to avoid hydration mismatch
@@ -198,18 +199,45 @@ const Gallery = () => {
 
   // Handle download
   const handleDownload = async (image) => {
+    const fileName = image.name;
+    setDownloadingFiles(prev => new Set([...prev, fileName]));
+    
     try {
       // Use the download API endpoint with proper headers
-      const downloadUrl = `/api/download/file?file=${encodeURIComponent(image.name)}`;
+      const downloadUrl = `/api/download/file?file=${encodeURIComponent(fileName)}`;
       
+      const response = await fetch(downloadUrl, {
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Download failed');
+      }
+      
+      // Get the file blob
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = image.name.split('/').pop() || 'wedding-photo';
+      link.href = url;
+      link.download = fileName.split('/').pop() || 'wedding-photo';
       document.body.appendChild(link);
       link.click();
+      
+      // Cleanup
       document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
     } catch (error) {
       console.error('Download error:', error);
+      // You could add a toast notification here
+    } finally {
+      setDownloadingFiles(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(fileName);
+        return newSet;
+      });
     }
   };
 
@@ -393,9 +421,14 @@ const Gallery = () => {
                         e.stopPropagation();
                         handleDownload(image);
                       }}
-                      className="p-1.5 sm:p-2 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors"
+                      disabled={downloadingFiles.has(image.name)}
+                      className="p-1.5 sm:p-2 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors disabled:opacity-50"
                     >
-                      <Download className="w-3 h-3 sm:w-4 sm:h-4" />
+                      {downloadingFiles.has(image.name) ? (
+                        <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Download className="w-3 h-3 sm:w-4 sm:h-4" />
+                      )}
                     </button>
                   </div>
                   <div className="mt-1 sm:mt-2 text-xs text-white/80 truncate">
@@ -432,10 +465,15 @@ const Gallery = () => {
             {/* Download Button */}
             <button
               onClick={() => handleDownload(selectedImage)}
-              className="p-2 sm:p-3 bg-blue-500 hover:bg-blue-600 rounded-full text-white transition-colors shadow-lg flex items-center justify-center"
+              disabled={downloadingFiles.has(selectedImage.name)}
+              className="p-2 sm:p-3 bg-blue-500 hover:bg-blue-600 rounded-full text-white transition-colors shadow-lg flex items-center justify-center disabled:opacity-50"
               title="Download this image"
             >
-              <Download className="w-5 h-5 sm:w-6 sm:h-6" />
+              {downloadingFiles.has(selectedImage.name) ? (
+                <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Download className="w-5 h-5 sm:w-6 sm:h-6" />
+              )}
             </button>
 
             {/* Close Button */}
@@ -501,10 +539,20 @@ const Gallery = () => {
               {/* Download Button in Info Section */}
               <button
                 onClick={() => handleDownload(selectedImage)}
-                className="flex items-center justify-center space-x-2 mx-auto px-4 sm:px-6 py-2 sm:py-3 bg-blue-500 hover:bg-blue-600 rounded-lg text-white text-xs sm:text-sm transition-colors shadow-lg font-medium"
+                disabled={downloadingFiles.has(selectedImage.name)}
+                className="flex items-center justify-center space-x-2 mx-auto px-4 sm:px-6 py-2 sm:py-3 bg-blue-500 hover:bg-blue-600 rounded-lg text-white text-xs sm:text-sm transition-colors shadow-lg font-medium disabled:opacity-50"
               >
-                <Download className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span>Download {selectedImage.isVideo ? 'Video' : 'Image'}</span>
+                {downloadingFiles.has(selectedImage.name) ? (
+                  <>
+                    <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Downloading...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <span>Download {selectedImage.isVideo ? 'Video' : 'Image'}</span>
+                  </>
+                )}
               </button>
 
               <div className="mt-3 text-xs text-white/70">

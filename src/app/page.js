@@ -182,16 +182,16 @@ const Home = () => {
 
       // Determine if we're on mobile for appropriate constraints
       const isMobile = window.innerWidth < 768;
-      
+
       const videoConstraints = {
         video: {
-          width: { 
-            ideal: isMobile ? 800 : 1280, 
-            max: isMobile ? 1024 : 1920 
+          width: {
+            ideal: isMobile ? 800 : 1280,
+            max: isMobile ? 1024 : 1920
           },
-          height: { 
-            ideal: isMobile ? 600 : 720, 
-            max: isMobile ? 768 : 1080 
+          height: {
+            ideal: isMobile ? 600 : 720,
+            max: isMobile ? 768 : 1080
           },
           facingMode: 'environment', // Back camera by default
           aspectRatio: { ideal: 4/3 } // More stable aspect ratio for mobile
@@ -259,17 +259,17 @@ const Home = () => {
       // Get actual video stream dimensions
       const videoWidth = video.videoWidth;
       const videoHeight = video.videoHeight;
-      
+
       // For mobile, use a more conservative max resolution to avoid stretching
       const isMobile = window.innerWidth < 768;
       const maxWidth = isMobile ? 800 : 1280;
       const maxHeight = isMobile ? 600 : 720;
-      
+
       // Calculate canvas dimensions maintaining exact aspect ratio
       let canvasWidth, canvasHeight;
       const videoAspectRatio = videoWidth / videoHeight;
       const maxAspectRatio = maxWidth / maxHeight;
-      
+
       if (videoAspectRatio > maxAspectRatio) {
         // Video is wider than our max ratio, limit by width
         canvasWidth = Math.min(videoWidth, maxWidth);
@@ -289,7 +289,7 @@ const Home = () => {
       canvas.height = canvasHeight;
 
       const ctx = canvas.getContext('2d');
-      
+
       // Reset any previous transformations
       ctx.setTransform(1, 0, 0, 1, 0, 0);
 
@@ -386,7 +386,7 @@ const Home = () => {
     ctx.beginPath();
     ctx.arc(x, y, size/2, 0, 2 * Math.PI);
     ctx.fill();
-    
+
     // Petals
     ctx.beginPath();
     ctx.arc(x - size/3, y - size/3, size/3, 0, 2 * Math.PI);
@@ -400,17 +400,17 @@ const Home = () => {
   // Wedding frame drawing function
   const drawFrame = useCallback((ctx, width, height, frameType) => {
     ctx.save();
-    
+
     switch (frameType) {
       case 'hearts':
         // Pink heart border
         ctx.strokeStyle = '#ec4899';
         ctx.lineWidth = 8;
         ctx.setLineDash([]);
-        
+
         // Draw border
         ctx.strokeRect(10, 10, width - 20, height - 20);
-        
+
         // Draw hearts in corners
         const heartSize = 20;
         drawHeart(ctx, 25, 25, heartSize, '#ec4899');
@@ -418,16 +418,16 @@ const Home = () => {
         drawHeart(ctx, 25, height - 45, heartSize, '#ec4899');
         drawHeart(ctx, width - 45, height - 45, heartSize, '#ec4899');
         break;
-        
+
       case 'floral':
         // Elegant floral border
         ctx.strokeStyle = '#d4af37';
         ctx.lineWidth = 12;
         ctx.setLineDash([]);
-        
+
         // Golden border
         ctx.strokeRect(15, 15, width - 30, height - 30);
-        
+
         // Corner flourishes
         ctx.strokeStyle = '#d4af37';
         ctx.lineWidth = 3;
@@ -436,7 +436,7 @@ const Home = () => {
         drawFlourish(ctx, 30, height - 55, 25);
         drawFlourish(ctx, width - 55, height - 55, 25);
         break;
-        
+
       case 'vintage':
         // Vintage photo frame
         ctx.fillStyle = 'rgba(139, 69, 19, 0.8)';
@@ -444,7 +444,7 @@ const Home = () => {
         ctx.fillRect(0, height - 25, width, 25);
         ctx.fillRect(0, 0, 25, height);
         ctx.fillRect(width - 25, 0, 25, height);
-        
+
         // Corner decorations
         ctx.fillStyle = '#d4af37';
         ctx.fillRect(0, 0, 40, 40);
@@ -452,28 +452,28 @@ const Home = () => {
         ctx.fillRect(0, height - 40, 40, 40);
         ctx.fillRect(width - 40, height - 40, 40, 40);
         break;
-        
+
       case 'lace':
         // Delicate lace border
         ctx.strokeStyle = '#f8f9fa';
         ctx.lineWidth = 2;
         ctx.setLineDash([5, 5]);
         ctx.strokeRect(20, 20, width - 40, height - 40);
-        
+
         ctx.setLineDash([10, 5]);
         ctx.strokeRect(25, 25, width - 50, height - 50);
         break;
-        
+
       case 'rose':
         // Rose gold elegant frame
         ctx.strokeStyle = '#e91e63';
         ctx.lineWidth = 6;
         ctx.setLineDash([]);
-        
+
         // Multiple nested borders
         ctx.strokeRect(8, 8, width - 16, height - 16);
         ctx.strokeRect(15, 15, width - 30, height - 30);
-        
+
         // Rose decorations
         drawRose(ctx, 30, 30, 15, '#e91e63');
         drawRose(ctx, width - 45, 30, 15, '#e91e63');
@@ -481,7 +481,7 @@ const Home = () => {
         drawRose(ctx, width - 45, height - 45, 15, '#e91e63');
         break;
     }
-    
+
     ctx.restore();
   }, [drawHeart, drawFlourish, drawRose]);
 
@@ -519,16 +519,16 @@ const Home = () => {
 
       // Determine if we're on mobile for appropriate constraints
       const isMobile = window.innerWidth < 768;
-      
+
       const videoConstraints = {
         video: {
-          width: { 
-            ideal: isMobile ? 800 : 1280, 
-            max: isMobile ? 1024 : 1920 
+          width: {
+            ideal: isMobile ? 800 : 1280,
+            max: isMobile ? 1024 : 1920
           },
-          height: { 
-            ideal: isMobile ? 600 : 720, 
-            max: isMobile ? 768 : 1080 
+          height: {
+            ideal: isMobile ? 600 : 720,
+            max: isMobile ? 768 : 1080
           },
           facingMode: newFacingMode,
           aspectRatio: { ideal: 4/3 }
@@ -703,7 +703,7 @@ const Home = () => {
       const link = document.createElement('a');
       link.href = '/api/download/all';
       link.download = `wedding-gallery-${new Date().toISOString().split('T')[0]}.zip`;
-      
+
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
