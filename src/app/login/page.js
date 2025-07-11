@@ -53,7 +53,6 @@ const Login = () => {
     try {
       setError('');
       setIsCameraOpen(false);
-      console.log('Starting camera...');
 
       // Check if getUserMedia is available
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -61,97 +60,132 @@ const Login = () => {
         return;
       }
 
-      // Wait a bit to ensure the video element is rendered
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      if (!videoRef.current) {
-        console.error('Video element not found after waiting');
-        setError('Video element not ready. Please try again.');
-        return;
-      }
-
+      // Simple approach - get stream and set it directly
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          width: { ideal: 300 },
-          height: { ideal: 300 },
-          facingMode: 'user' // Front camera for selfie
-        }
-      });
+          width: { ideal: 480, max: 640 },
+          height: { ideal: 480, max: 640 },
+          facingMode: 'user'
+        }        });
 
-      console.log('Got media stream:', stream);
+      // Set the stream directly to video element
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        streamRef.current = stream;
 
-      videoRef.current.srcObject = stream;
-      streamRef.current = stream;
-      console.log('Set video source');
-
-      // Set up event handlers
-      const handleLoadedMetadata = () => {
-        console.log('Video metadata loaded');
-        if (videoRef.current) {
+        // Wait for video to be ready and play
+        videoRef.current.onloadedmetadata = () => {
           videoRef.current.play()
             .then(() => {
-              console.log('Video started playing');
               setIsCameraOpen(true);
             })
-            .catch((playError) => {
-              console.error('Error playing video:', playError);
-              setError('Failed to start camera preview: ' + playError.message);
+            .catch((error) => {
+              console.error('Play failed:', error);
+              setError('Failed to start video preview');
             });
+        };
+
+        // Force play if metadata already loaded
+        if (videoRef.current.readyState >= 1) {
+          try {
+            await videoRef.current.play();
+            setIsCameraOpen(true);
+          } catch (error) {
+            // Ignore direct play errors
+          }
         }
-      };
-
-      videoRef.current.onloadedmetadata = handleLoadedMetadata;
-
-      // Try to play immediately
-      try {
-        await videoRef.current.play();
-        console.log('Video playing directly');
-        setIsCameraOpen(true);
-      } catch (playError) {
-        console.log('Direct play failed, waiting for metadata:', playError.message);
-        // Will be handled by onloadedmetadata
+      } else {
+        throw new Error('Video element not available');
       }
+
     } catch (err) {
-      console.error('Camera error:', err);
+      // Clean up stream on error
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+
       if (err.name === 'NotAllowedError') {
         setError('Camera access denied. Please allow camera access and try again.');
       } else if (err.name === 'NotFoundError') {
         setError('No camera found on this device.');
       } else {
-        setError('Camera access failed: ' + err.message);
+        setError('Camera failed to start. Please try again.');
       }
     }
   };
 
   const capturePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
-      const canvas = canvasRef.current;
-      const video = videoRef.current;
+    if (!videoRef.current || !canvasRef.current) {
+      setError('Camera not ready for photo capture');
+      return;
+    }
 
-      canvas.width = 300;
-      canvas.height = 300;
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
 
-      const ctx = canvas.getContext('2d');
+    // Check if video is ready
+    if (video.readyState < 2) {
+      setError('Video not ready yet. Please wait a moment and try again.');
+      return;
+    }
 
+    // Check if video has valid dimensions
+    const videoWidth = video.videoWidth;
+    const videoHeight = video.videoHeight;
+
+    if (!videoWidth || !videoHeight) {
+      setError('Video dimensions not available. Please try again.');
+      return;
+    }
+
+    canvas.width = 300;
+    canvas.height = 300;
+
+    const ctx = canvas.getContext('2d');
+
+    // Clear canvas first
+    ctx.clearRect(0, 0, 300, 300);
+
+    // Calculate crop area to get a square from the center
+    const size = Math.min(videoWidth, videoHeight);
+    const x = (videoWidth - size) / 2;
+    const y = (videoHeight - size) / 2;
+
+    // Draw the video frame onto canvas
+    try {
       // Flip the image horizontally to match the mirrored video
       ctx.save();
       ctx.scale(-1, 1);
-      ctx.drawImage(video, -300, 0, 300, 300);
+      ctx.translate(-300, 0);
+      ctx.drawImage(video, x, y, size, size, 0, 0, 300, 300);
       ctx.restore();
 
       const dataURL = canvas.toDataURL('image/jpeg', 0.8);
-      setCapturedPhoto(dataURL);
 
-      // Stop camera stream
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-        setIsCameraOpen(false);
+      // Validate the data URL
+      if (dataURL && dataURL.length > 50 && dataURL.startsWith('data:image/')) {
+        setCapturedPhoto(dataURL);
+      } else {
+        setError('Failed to capture photo. Please try again.');
+        return;
       }
+    } catch (err) {
+      setError('Failed to capture photo. Please try again.');
+      return;
+    }
+
+    // Stop camera stream
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+      setIsCameraOpen(false);
     }
   };
 
   const retakePhoto = () => {
     setCapturedPhoto(null);
+    setError('');
 
     // Stop current stream if any
     if (streamRef.current) {
@@ -161,7 +195,7 @@ const Login = () => {
 
     setIsCameraOpen(false);
 
-    // Small delay to ensure state updates before restarting camera
+    // Small delay to ensure cleanup before restarting
     setTimeout(() => {
       startCamera();
     }, 200);
@@ -210,10 +244,11 @@ const Login = () => {
         }),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
         router.push('/');
       } else {
-        const data = await response.json();
         setError(data.message || 'Authentication failed');
       }
     } catch (err) {
@@ -291,35 +326,11 @@ const Login = () => {
                 {step === 3 && "Take a selfie for our guest list"}
               </>
             )}
-            {loginType === 'admin' && "Admin Login"}
+            {loginType === 'admin' && "Admin Access"}
           </p>
         </div>
 
-        {/* Login Type Toggle */}
-        <div className="flex bg-gray-100 rounded-xl p-1 mb-6">
-          <button
-            type="button"
-            onClick={() => setLoginType('guest')}
-            className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
-              loginType === 'guest'
-                ? 'bg-white text-pink-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-800'
-            }`}
-          >
-            Guest Login
-          </button>
-          <button
-            type="button"
-            onClick={() => setLoginType('admin')}
-            className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
-              loginType === 'admin'
-                ? 'bg-white text-red-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-800'
-            }`}
-          >
-            Admin Login
-          </button>
-        </div>
+
 
         {/* Step Indicator - Only for Guest Login */}
         {loginType === 'guest' && (
@@ -362,7 +373,7 @@ const Login = () => {
                   type="text"
                   value={adminUsername}
                   onChange={(e) => setAdminUsername(e.target.value)}
-                  className="w-full pl-10 sm:pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-transparent transition-all bg-white/50 backdrop-blur-sm text-sm sm:text-base"
+                  className="w-full pl-10 sm:pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-transparent transition-all bg-white/50 backdrop-blur-sm text-gray-900 placeholder-gray-500 text-sm sm:text-base"
                   placeholder="Enter admin username"
                   required
                 />
@@ -377,7 +388,7 @@ const Login = () => {
                   type={showPassword ? 'text' : 'password'}
                   value={adminPassword}
                   onChange={(e) => setAdminPassword(e.target.value)}
-                  className="w-full pl-10 sm:pl-12 pr-10 sm:pr-12 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-transparent transition-all bg-white/50 backdrop-blur-sm text-sm sm:text-base"
+                  className="w-full pl-10 sm:pl-12 pr-10 sm:pr-12 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-transparent transition-all bg-white/50 backdrop-blur-sm text-gray-900 placeholder-gray-500 text-sm sm:text-base"
                   placeholder="Enter admin password"
                   required
                 />
@@ -419,7 +430,7 @@ const Login = () => {
                   type="text"
                   value={guestName}
                   onChange={(e) => setGuestName(e.target.value)}
-                  className="w-full pl-10 sm:pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-400 focus:border-transparent transition-all bg-white/50 backdrop-blur-sm text-sm sm:text-base"
+                  className="w-full pl-10 sm:pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-400 focus:border-transparent transition-all bg-white/50 backdrop-blur-sm text-gray-900 placeholder-gray-500 text-sm sm:text-base"
                   placeholder="Enter your full name"
                   required
                 />
@@ -449,7 +460,7 @@ const Login = () => {
                   type={showPassword ? 'text' : 'password'}
                   value={passcode}
                   onChange={(e) => setPasscode(e.target.value)}
-                  className="w-full pl-10 sm:pl-12 pr-10 sm:pr-12 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-400 focus:border-transparent transition-all bg-white/50 backdrop-blur-sm text-sm sm:text-base"
+                  className="w-full pl-10 sm:pl-12 pr-10 sm:pr-12 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-400 focus:border-transparent transition-all bg-white/50 backdrop-blur-sm text-gray-900 placeholder-gray-500 text-sm sm:text-base"
                   placeholder="Enter wedding passcode"
                   required
                 />
@@ -489,41 +500,34 @@ const Login = () => {
           <div className="space-y-4 sm:space-y-6">
             <div className="text-center">
               <div className="w-48 h-48 mx-auto bg-gray-100 rounded-full overflow-hidden border-4 border-pink-200 relative">
-                {/* Always render video element but hide when not needed */}
+                {/* Video element - always rendered but only visible when camera is open */}
                 <video
                   ref={videoRef}
                   autoPlay
                   playsInline
                   muted
                   className={`w-full h-full object-cover transform scale-x-[-1] ${
-                    isCameraOpen ? 'block' : 'hidden'
+                    isCameraOpen ? 'opacity-100' : 'opacity-0'
                   }`}
-                  style={{
-                    filter: 'none',
-                    width: '100%',
-                    height: '100%'
-                  }}
-                  onLoadedMetadata={() => {
-                    console.log('Video metadata loaded');
-                  }}
-                  onCanPlay={() => {
-                    console.log('Video can play');
-                  }}
                 />
 
+                {/* Camera placeholder */}
                 {!capturedPhoto && !isCameraOpen && (
-                  <div className="w-full h-full flex flex-col items-center justify-center text-gray-500">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 z-10">
                     <Camera className="w-16 h-16 text-gray-400 mb-2" />
                     <span className="text-sm">Camera Preview</span>
                   </div>
                 )}
 
+                {/* Captured photo */}
                 {capturedPhoto && (
-                  <img
-                    src={capturedPhoto}
-                    alt="Your selfie"
-                    className="w-full h-full object-cover"
-                  />
+                  <div className="absolute inset-0 z-20">
+                    <img
+                      src={capturedPhoto}
+                      alt="Your selfie"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
                 )}
               </div>
 
@@ -543,23 +547,9 @@ const Login = () => {
                     </div>
                   </button>
 
-                  {/* Debug info */}
                   <p className="text-xs text-gray-500">
                     Make sure to allow camera access when prompted
                   </p>
-
-                  {/* Debug button */}
-                  <button
-                    onClick={() => {
-                      console.log('Video ref:', videoRef.current);
-                      console.log('Canvas ref:', canvasRef.current);
-                      console.log('Stream ref:', streamRef.current);
-                      console.log('Camera open:', isCameraOpen);
-                    }}
-                    className="text-xs text-gray-400 hover:text-gray-600"
-                  >
-                    Debug Info
-                  </button>
                 </div>
               )}
 
@@ -619,6 +609,14 @@ const Login = () => {
         {/* Footer */}
         <div className="text-center mt-6 sm:mt-8 text-xs sm:text-sm text-gray-500">
           <p>Join our special celebration</p>
+          <div className="mt-3 pt-3 border-t border-gray-200">
+            <button
+              onClick={() => setLoginType('admin')}
+              className="text-gray-400 hover:text-gray-600 transition-colors underline text-xs"
+            >
+              Admin Login
+            </button>
+          </div>
         </div>
       </div>
     </div>

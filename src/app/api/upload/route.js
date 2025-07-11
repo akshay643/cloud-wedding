@@ -98,10 +98,13 @@ export async function POST(request) {
       })
     );
 
-    // Update guest statistics if it's a guest upload
+    // Update guest statistics if it's a guest upload (count each successful media file)
     if (decoded.type === 'guest') {
       try {
-        await updateGuestStats(decoded.guestId, 'upload');
+        // Count each uploaded file since they're all validated as images/videos
+        for (let i = 0; i < uploadResults.length; i++) {
+          await updateGuestStats(decoded.guestId, 'upload');
+        }
       } catch (error) {
         console.warn('Failed to update guest stats:', error);
       }

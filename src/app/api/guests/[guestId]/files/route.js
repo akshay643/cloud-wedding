@@ -33,8 +33,16 @@ export async function GET(request, { params }) {
     // Get all files from GCS
     const allFiles = await getAllFilesFromGCS();
 
-    // Filter files by the specific guest
+    // Filter files by the specific guest and only include photos/videos
     const guestFiles = allFiles.filter(file => {
+      // Only include image and video files
+      const isMedia = file.contentType && (
+        file.contentType.startsWith('image/') ||
+        file.contentType.startsWith('video/')
+      );
+
+      if (!isMedia) return false;
+
       // Check if the file metadata contains uploader information
       const metadata = file.metadata || {};
       return metadata.uploadedById === guestId ||

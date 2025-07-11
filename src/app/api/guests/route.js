@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
-import { getGuestsFromGCS } from '@/lib/gcs';
+import { getGuestsFromGCS, getGuestMediaCounts } from '@/lib/gcs';
 
 export async function GET(request) {
   try {
@@ -21,16 +21,17 @@ export async function GET(request) {
       );
     }
 
-    // Get guests from GCS
+    // Get guests from GCS and actual media counts
     const guests = await getGuestsFromGCS();
+    const mediaCounts = await getGuestMediaCounts();
 
-    // Return guest list with public info only (no sensitive data)
+    // Return guest list with accurate photo/video counts
     const publicGuestList = guests.map(guest => ({
       id: guest.id,
       name: guest.name,
       selfiePhoto: guest.selfiePhoto,
       joinedAt: guest.joinedAt,
-      uploadsCount: guest.uploadsCount || 0,
+      uploadsCount: mediaCounts[guest.id] || 0, // Use actual media count
       wishesCount: guest.wishesCount || 0,
       lastActivity: guest.lastActivity || guest.lastLogin
     }));

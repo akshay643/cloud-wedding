@@ -199,10 +199,12 @@ const Gallery = () => {
   // Handle download
   const handleDownload = async (image) => {
     try {
+      // Use the download API endpoint with proper headers
+      const downloadUrl = `/api/download/file?file=${encodeURIComponent(image.name)}`;
+      
       const link = document.createElement('a');
-      link.href = image.publicUrl;
+      link.href = downloadUrl;
       link.download = image.name.split('/').pop() || 'wedding-photo';
-      link.target = '_blank';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

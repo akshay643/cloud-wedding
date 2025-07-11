@@ -222,3 +222,43 @@ export const getSignedUrl = async (fileName, action = 'read', expires = Date.now
     throw error;
   }
 };
+
+// Get accurate count of photos/videos for all guests
+export const getGuestMediaCounts = async () => {
+  try {
+    const files = await listFiles();
+    const guestCounts = {};
+
+    files.forEach(file => {
+      // Only count image and video files
+      const isMedia = file.contentType && (
+        file.contentType.startsWith('image/') ||
+        file.contentType.startsWith('video/')
+      );
+
+      if (isMedia) {
+        const metadata = file.metadata || {};
+        const guestId = metadata.uploadedById;
+        
+        // Count by guest ID if available
+        if (guestId) {
+          guestCounts[guestId] = (guestCounts[guestId] || 0) + 1;
+        } else {
+          // Fallback: try to extract guest info from filename pattern
+          const fileNameParts = file.name.split('-');
+          if (fileNameParts.length >= 3) {
+            const extractedGuestId = fileNameParts[1];
+            if (extractedGuestId) {
+              guestCounts[extractedGuestId] = (guestCounts[extractedGuestId] || 0) + 1;
+            }
+          }
+        }
+      }
+    });
+
+    return guestCounts;
+  } catch (error) {
+    console.error('Error getting guest media counts:', error);
+    return {};
+  }
+};

@@ -60,14 +60,17 @@ export async function POST(request) {
     }
 
     // Get the wish data from request
-    const { name, message } = await request.json();
+    const { message } = await request.json();
 
-    if (!name || !message) {
+    if (!message) {
       return NextResponse.json(
-        { error: 'Name and message are required' },
+        { error: 'Message is required' },
         { status: 400 }
       );
     }
+
+    // Get the user's name from the decoded token
+    const userName = decoded.type === 'guest' ? decoded.guestName : decoded.username;
 
     // Get existing wishes
     const existingWishes = await getWishesFromGCS();
@@ -75,9 +78,9 @@ export async function POST(request) {
     // Create new wish
     const newWish = {
       id: Date.now().toString(),
-      name: name.trim(),
+      name: userName.trim(),
       message: message.trim(),
-      submittedBy: decoded.type === 'guest' ? decoded.guestName : decoded.username,
+      submittedBy: userName,
       submittedById: decoded.type === 'guest' ? decoded.guestId : decoded.userId,
       submittedByType: decoded.type || 'admin',
       submittedAt: new Date().toISOString()

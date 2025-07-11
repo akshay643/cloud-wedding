@@ -64,10 +64,12 @@ const GuestsPage = () => {
 
   const handleDownload = (file) => {
     try {
+      // Use the download API endpoint with proper headers
+      const downloadUrl = `/api/download/file?file=${encodeURIComponent(file.name)}`;
+      
       const link = document.createElement('a');
-      link.href = file.publicUrl;
+      link.href = downloadUrl;
       link.download = file.name.split('/').pop() || 'wedding-photo';
-      link.target = '_blank';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -226,7 +228,7 @@ const GuestsPage = () => {
                         <Upload size={14} className={
                           guest.uploadsCount && guest.uploadsCount > 0 ? 'text-pink-600' : 'text-gray-400'
                         } />
-                        <span className="text-xs font-medium text-gray-600">Photos</span>
+                        <span className="text-xs font-medium text-gray-600">Photos/Videos</span>
                       </div>
                       <div className={`text-lg font-bold ${
                         guest.uploadsCount && guest.uploadsCount > 0 ? 'text-pink-600' : 'text-gray-400'
