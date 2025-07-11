@@ -158,3 +158,4 @@ For issues or questions, check the console logs and ensure:
 This project is for personal use in wedding celebrations.
 # cloud-wedding
 # cloud-wedding
+# cloud-wedding
