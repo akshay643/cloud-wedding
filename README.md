@@ -156,3 +156,4 @@ For issues or questions, check the console logs and ensure:
 
 ## License
 This project is for personal use in wedding celebrations.
+# cloud-wedding
