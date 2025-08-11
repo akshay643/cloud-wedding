@@ -27,6 +27,38 @@ body {
   box-sizing: border-box;
 }
 
+/* Wedding Fonts */
+.font-dancing {
+  font-family: var(--font-dancing-script), cursive;
+}
+
+.font-great-vibes {
+  font-family: var(--font-great-vibes), cursive;
+}
+
+.font-pacifico {
+  font-family: var(--font-pacifico), cursive;
+}
+
+/* Wedding animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes sparkle {
+  0%, 100% { opacity: 0; transform: scale(0); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+.animate-sparkle {
+  animation: sparkle 2s ease-in-out infinite;
+}
+
 /* Mobile optimizations */
 * {
   -webkit-tap-highlight-color: transparent;
