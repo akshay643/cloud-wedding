@@ -156,7 +156,7 @@ const AdminPage = () => {
 
       if (response && response.ok) {
         setDeleteModal(null);
-        
+
         // Optimized state updates for guests and wishes too
         if (type === 'file') {
           setFiles(prev => prev.filter(file => file.name !== fileName));
@@ -170,7 +170,7 @@ const AdminPage = () => {
           setWishes(prev => prev.filter((_, index) => index !== id));
           setSuccessMessage('Wish deleted successfully');
         }
-        
+
         // Clear success message after 3 seconds
         setTimeout(() => setSuccessMessage(''), 3000);
       } else {
@@ -185,8 +185,8 @@ const AdminPage = () => {
 
   // Handle bulk file selection
   const toggleFileSelection = (fileName) => {
-    setSelectedFiles(prev => 
-      prev.includes(fileName) 
+    setSelectedFiles(prev =>
+      prev.includes(fileName)
         ? prev.filter(f => f !== fileName)
         : [...prev, fileName]
     );
@@ -215,12 +215,12 @@ const AdminPage = () => {
 
       if (response.ok) {
         const result = await response.json();
-        
+
         // Update state by removing successfully deleted files
         setFiles(prev => prev.filter(file => !result.deleted.includes(file.name)));
         setSelectedFiles([]);
         setIsSelectMode(false);
-        
+
         // Show success/error message
         if (result.failed.length > 0) {
           setError(`Successfully deleted ${result.successful} files, but ${result.failed.length} failed`);
@@ -231,7 +231,7 @@ const AdminPage = () => {
       } else {
         setError('Failed to delete files');
       }
-      
+
     } catch (err) {
       setError('Failed to delete files');
     } finally {
@@ -324,6 +324,13 @@ const AdminPage = () => {
             <Heart size={18} />
             Wishes ({wishes.length})
           </button>
+          <button
+            onClick={() => router.push('/admin/rsvp')}
+            className="flex items-center gap-2 px-4 py-2 rounded-md transition-colors text-gray-600 hover:text-gray-800 hover:bg-gray-100"
+          >
+            <Users size={18} />
+            RSVP Guest List
+          </button>
         </div>
 
         {error && (
@@ -347,7 +354,7 @@ const AdminPage = () => {
                   <h2 className="text-lg font-semibold text-gray-800">Manage Files</h2>
                   <p className="text-gray-600">Delete photos and videos uploaded by guests</p>
                 </div>
-                
+
                 {/* Bulk Actions */}
                 <div className="flex items-center gap-3">
                   {!isSelectMode ? (
@@ -366,7 +373,7 @@ const AdminPage = () => {
                         {selectedFiles.length === files.length ? <CheckSquare size={16} /> : <Square size={16} />}
                         <span>{selectedFiles.length === files.length ? 'Deselect All' : 'Select All'}</span>
                       </button>
-                      
+
                       {selectedFiles.length > 0 && (
                         <button
                           onClick={handleBulkDelete}
@@ -377,7 +384,7 @@ const AdminPage = () => {
                           <span>{bulkDeleting ? 'Deleting...' : `Delete ${selectedFiles.length}`}</span>
                         </button>
                       )}
-                      
+
                       <button
                         onClick={() => {
                           setIsSelectMode(false);
@@ -409,7 +416,7 @@ const AdminPage = () => {
                         )}
                       </button>
                     )}
-                    
+
                     <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden">
                       {file.isVideo ? (
                         <div className="w-full h-full flex items-center justify-center bg-gray-800">
@@ -437,7 +444,7 @@ const AdminPage = () => {
                       </p>
                     </div>
                   </div>
-                  
+
                   {/* Single Delete Button (hidden in select mode) */}
                   {!isSelectMode && (
                     <button
