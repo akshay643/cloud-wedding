@@ -214,7 +214,7 @@ const Login = () => {
 
   // Countdown timer effect
   useEffect(() => {
-    const weddingDate = new Date('2025-10-12T00:00:00'); // November 1st, 2025
+    const weddingDate = new Date('2025-11-01T00:00:00'); // November 1st, 2025
 
     const updateTimer = () => {
       const now = new Date().getTime();
