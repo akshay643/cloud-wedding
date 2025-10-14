@@ -492,7 +492,7 @@ const Login = () => {
 
   const handleLoginClick = () => {
     const currentDate = new Date();
-    const activationDate = new Date('2025-10-30T00:00:00'); // October 30th, 2025
+    const activationDate = new Date('2025-10-14T00:00:00'); // October 30th, 2025
 
     if (currentDate < activationDate) {
       alert('Login will be active on October 30th, 2025. Please check back then!');
